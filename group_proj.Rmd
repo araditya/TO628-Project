@@ -1,6 +1,6 @@
 ---
 title: "group_proj"
-author: "kaki"
+author: "kaike"
 date: "April 18, 2020"
 output: html_document
 ---
