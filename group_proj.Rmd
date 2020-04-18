@@ -45,6 +45,9 @@ library(C50) # decision tree
 housing <- read.csv("california-housing-prices.csv")
 str(housing)
 
+housing_train <- housing[1:16000,]
+housing_test <- housing[16001:20640,]
+
 ```
 
 ## linear regression
