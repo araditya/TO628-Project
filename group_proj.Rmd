@@ -5,30 +5,6 @@ date: "April 18, 2020"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
-
 ```{r}
 # import libraries
 library(car)
@@ -62,5 +38,49 @@ housing$total_bedrooms <- ifelse(is.na(housing$total_bedrooms), mean(housing$tot
 ```{r}
 model_lin <- lm(median_house_value ~., data = housing)
 summary(model_lin)
+```
+
+## SVM
+
+```{r}
+# Data categorization
+hist(housing$median_house_value)
+
+Pricecut <- function(x) {
+  if (x <100000) {
+    pricecat <- "below100K"
+  } else if (x >=100000 & x < 200000) {
+    pricecat <- "100k-200k"
+  } else if (x >=200000 & x < 300000) {
+    pricecat <- "200k-300k"
+  } else if (x >=300000 & x < 400000) {
+    pricecat <- "300k-400k"
+  } else if (x >=400000 & x < 500000) {
+    pricecat <- "400k-500k"
+  } else {
+    pricecat <- "over500k"
+  }
+}
+
+# creat new data with categorization "housingcat"
+housingcat <- housing
+housingcat$pricecat <- sapply(housingcat$median_house_value, FUN = Pricecut)
+housingcat$pricecat <- as.factor(housingcat$pricecat)
+str(housingcat)
+
+# train & test data for "housing cat"
+housingcat_train <- housingcat[1:16000,]
+housingcat_test <- housingcat[16001:20640,]
+
+# SVM1 - vanilladot
+model_svm1 <- ksvm(median_house_value ~., data = housingcat_train,
+             kernel = "vanilladot")
+
+svm1_result <- predict(model_svm1, housingcat_test)
+
+plot(svm1_result, housingcat_test$median_house_value)
+cor(svm1_result, housingcat_test$median_house_value)
+
+
 ```
 
