@@ -50,6 +50,13 @@ housing_test <- housing[16001:20640,]
 
 ```
 
+```{r}
+#clean data
+
+housing$total_bedrooms <- ifelse(is.na(housing$total_bedrooms), mean(housing$total_bedrooms, na.rm = TRUE)/mean(housing$total_rooms, na.rm = TRUE)*housing$total_rooms, housing$total_bedrooms)
+
+```
+
 ## linear regression
 
 ```{r}
