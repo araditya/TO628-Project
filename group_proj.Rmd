@@ -28,3 +28,29 @@ plot(pressure)
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+# import libraries
+library(car)
+library(lmtest)
+library(dplyr) # dataframe
+library(ggplot2)
+library(gmodels) # Crosstable
+library(class) # knn
+library(neuralnet) # ANN
+library(kernlab) #SVM
+library(C50) # decision tree
+
+# read data file
+housing <- read.csv("california-housing-prices.csv")
+str(housing)
+
+```
+
+## linear regression
+
+```{r}
+model_lin <- lm(median_house_value ~., data = housing)
+summary(model_lin)
+```
+
