@@ -72,7 +72,7 @@ str(housingcat)
 housingcat_train <- housingcat[1:16000,]
 housingcat_test <- housingcat[16001:20640,]
 
-# SVM1 - vanilladot
+# SVM1 - vanilladot - housevalue
 model_svm1 <- ksvm(median_house_value ~., data = housingcat_train,
              kernel = "vanilladot")
 
@@ -80,6 +80,17 @@ svm1_result <- predict(model_svm1, housingcat_test)
 
 plot(svm1_result, housingcat_test$median_house_value)
 cor(svm1_result, housingcat_test$median_house_value)
+
+# SVM1_2 - vanilladot - housecategory
+model_svm1_2 <- ksvm(pricecat ~., data = housingcat_train,
+             kernel = "vanilladot")
+
+svm1_2_result <- predict(model_svm1_2, housingcat_test)
+
+aggreement1_2 <- svm1_2_result == housingcat_test$pricecat
+
+table(svm1_2_result,housingcat_test$pricecat)
+prop.table(table(aggreement1_2))
 
 
 ```
