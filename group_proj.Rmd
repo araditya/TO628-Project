@@ -114,4 +114,21 @@ agrmt_svm2_2 <- prop.table(table(aggreement2_2)); agrmt_svm2_2
 
 
 ```
+## Decision Tree
+```{r}
+# random suffling
+set.seed(33)
+housingcat_train_rand <- housingcat_train[order(runif(16000)), ]
+
+# Decision Tree model
+model_DT <- C5.0(pricecat ~., data = housingcat_train_rand)
+DT_pred <- predict(model_DT, housingcat_test)
+
+aggreement_DT <- DT_pred == housingcat_test$pricecat
+
+table(DT_pred,housingcat_test$pricecat)
+agrmt_DT <- prop.table(table(aggreement_DT)); agrmt_DT
+
+
+```
 
