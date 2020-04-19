@@ -342,17 +342,18 @@ cor(prediction_h$V1, housing_norm_test$median_house_value)
 ```
 #KNN
 
-housing_train <- housing[4001:20640, ]
-housing_test <- housing[1:4000, ]
-housing_train_labels <- housing[4001:20640, 1]
-housing_test_labels <- housing[1:4001, 1]
 library(class)
-housing_test_pred <- knn(train = housing_train, test = housing_test,
-                      cl = housing_train_labels, k=21)
+
 normalize <- function(x){return((x-min(x)) / (max(x) - min(x)))}
 housing_n <- housing
 housing_n[c(1:9)] <- as.data.frame(lapply(housing[c(1:9)], normalize))
+housing_train <- housing_n[4001:20640, ]
+housing_test <- housing_n[1:4000, ]
+housing_train_labels <- housing_n[4001:20640, 1]
+housing_test_labels <- housing_n[1:4001, 1]
 
+housing_test_pred <- knn(train = housing_train, test = housing_test,
+                      cl = housing_train_labels, k=21)
 # Partioning Data Randomly
 in_train <- createDataPartition(housing$median_house_value, p = 0.8, list = TRUE)
 housing_train <- housing_n[in_train, ]
