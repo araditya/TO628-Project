@@ -20,9 +20,11 @@ library(C50) # decision tree
 # read data file
 housing <- read.csv("california-housing-prices.csv")
 str(housing)
+summary(housing)
 
 housing_train <- housing[1:16000,]
 housing_test <- housing[16001:20640,]
+
 
 ```
 
@@ -92,6 +94,35 @@ aggreement1_2 <- svm1_2_result == housingcat_test$pricecat
 table(svm1_2_result,housingcat_test$pricecat)
 agrmt_svm1_2 <- prop.table(table(aggreement1_2)); agrmt_svm1_2
 
+
+```
+##ANN
+```{r}
+
+normalize <- function(x) { 
+  return((x - min(x)) / (max(x) - min(x)))
+}
+#str(hou)
+hou <- housing[-10]
+hou$ocean_proximity <- as.numeric(housing$ocean_proximity)
+housing_norm <- as.data.frame(lapply(hou, normalize))
+#housing_norm$median_house_value <- housing$median_house_value
+str(housing_norm)
+housing_norm_train <- housing_norm[1:16000,]
+housing_norm_test <- housing_norm[16001:20640,]
+
+housing_model <- neuralnet(formula = median_house_value ~.,
+                              data = housing_norm_train,hidden = c(4,3,2),threshold = 0.08,stepmax = 8e+04,lifesign =  "full",lifesign.step= 1000,act.fct = "logistic")
+#plot(housing_model)
+
+# obtain model results
+model_results <- compute(housing_model, housing_norm_test[-10])
+# obtain predicted strength values
+predicted_median_house_value <- model_results$net.result
+# examine the correlation between predicted and actual values
+prediction_h<- as.data.frame(predicted_median_house_value)
+str(prediction_h)
+cor(prediction_h$V1, housing_norm_test$median_house_value)
 
 ```
 
