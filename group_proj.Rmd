@@ -10,101 +10,6 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
-# import libraries
-library(car)
-library(lmtest)
-#library(sandwich) # for robust test (when heteroskedasticity occurs)
-library(dplyr) # dataframe
-library(ggplot2)
-library(gmodels) # Crosstable
-library(class) # knn
-library(neuralnet) # ANN
-library(kernlab) #SVM
-library(C50) # decision tree
-
-# read data file
-housing <- read.csv("california-housing-prices.csv")
-str(housing)
-summary(housing)
-
-plot(median_house_value, longitude)
-plot(median_house_value, latitude)
-plot(median_house_value, housing_median_age)
-plot(median_house_value, total_rooms)
-plot(median_house_value, total_bedrooms)
-plot(median_house_value, population)
-plot(median_house_value, households)
-plot(median_house_value, median_income)
-plot(median_house_value, ocean_proximity)
-```
-
-```{r}
-#housing$total_bedrooms <- ifelse(is.na(housing$total_bedrooms), mean(housing$total_bedrooms, na.rm = TRUE), housing$total_bedrooms)
-
-
-#lm with every variables
-model_lin1 <- lm(median_house_value ~., data = housing)
-summary(model_lin1)
-
-#add interaction term of longtitude*latitude -> similar to pointing the location on the map
-model_lin2 <- lm(median_house_value ~. + longitude*latitude, data = housing)
-summary(model_lin2)
-#housing$resi <- model_lin2$residuals
-#varfunc_ols <- lm(log(resi^2) ~ log(longitude) + log(latitude) + log(housing_median_age) + #log(total_rooms) + log(total_bedrooms) + log(population) + log(households) + log(median_income) + #ocean_proximity + log(longitude*latitude), data = housing)
-#housing$varfunc <- exp(varfunc_ols$fitted.values)
-#model_glin2 <- lm(median_house_value ~ . + longitude*latitude, weights = 1/sqrt(varfunc), data = food)
-
-
-#add functional form
-model_lin3 <- lm(log(median_house_value) ~ longitude + latitude + I(housing_median_age^2) + total_rooms + total_bedrooms + population + households + log(median_income) + ocean_proximity, data = housing)
-summary(model_lin3) #R-squared = 0.6725
-
-#drop some variable with high collinearity
-#drop total_bedroom
-model_lin4 <- lm(log(median_house_value) ~ longitude + latitude + I(housing_median_age^2) + total_rooms + population + households + log(median_income) + ocean_proximity, data = housing)
-summary(model_lin4) #R-squared = 0.6705
-#drop household
-model_lin5 <- lm(log(median_house_value) ~ longitude + latitude + I(housing_median_age^2) + total_rooms + total_bedrooms + population + log(median_income) + ocean_proximity, data = housing)
-summary(model_lin5) #R-squared = 0.6713
-#drop both
-model_lin6 <- lm(log(median_house_value) ~ longitude + latitude + I(housing_median_age^2) + total_rooms + population + log(median_income) + ocean_proximity, data = housing)
-summary(model_lin6) #R-squared = 0.6584
-#For model4 and model5, after dropping one variable made the VIF dropped significantly
-
-
-
-#check how the models performed
-#shapiro.test(residuals(model_lin1)) #see if the residuals are normally distributed.
-
-#test homoskedasticity
-bptest(model_lin1) #if p-value is smaller than the significance level we choose, we reject the null
-                   #hypothesis, meaning there exist heteroskedasticity
-#The result is that we reject the null hypothesis, i.e. there exist heteroskedasticity
-
-#test collinearity
-vif(model_lin5) #if the value is greater than 10 then it's very likely to have multicollinearity
-                #actually if the value is greater than 5 is worth noticing.
-#The largest VIF here is total_bedroom and households (around 6), so we can consider dropping them
-
-#test autocorrelation of residual
-dwtest(model_lin1) #if p-value is smaller than the significance level, we reject the null hypoth.,
-                   #meanig there is autocorrelation (or the model is incorrectly specified)
-#We reject the null hypothesis, so there is autocorrelation.
-
-#test if there are outliers
-outlierTest(model_lin1)
-#There are two significant outliers, we can consider dropping them
-
-#plots
-plot(model_lin1, which=1) #residual and fitted value plot
-plot(model_lin1, which=2)
-
-
-
-```
-
-
 <<<<<<< HEAD
 =======
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
@@ -128,10 +33,6 @@ housing <- read.csv("california-housing-prices.csv")
 str(housing)
 summary(housing)
 
-housing_train <- housing[1:16000,]
-housing_test <- housing[16001:20640,]
-
-
 ```
 
 ```{r}
@@ -139,13 +40,69 @@ housing_test <- housing[16001:20640,]
 
 housing$total_bedrooms <- ifelse(is.na(housing$total_bedrooms), mean(housing$total_bedrooms, na.rm = TRUE)/mean(housing$total_rooms, na.rm = TRUE)*housing$total_rooms, housing$total_bedrooms)
 
+housing_train <- housing[1:16000,]
+housing_test <- housing[16001:20640,]
 ```
 
 ## linear regression
 
 ```{r}
-model_lin <- lm(median_house_value ~., data = housing)
-summary(model_lin)
+# Graphs of median_house_value with other explanatory variables
+plot(median_house_value, longitude)
+plot(median_house_value, latitude)
+plot(median_house_value, housing_median_age)
+plot(median_house_value, total_rooms)
+plot(median_house_value, total_bedrooms)
+plot(median_house_value, population)
+plot(median_house_value, households)
+plot(median_house_value, median_income)
+plot(median_house_value, ocean_proximity)
+
+# Linear model with every variable
+model_lin1 <- lm(median_house_value ~., data = housing_train)
+summary(model_lin1) #R-squared = 0.6244
+
+# Test collinearity
+vif(model_lin1) #if the value is greater than 10 then it's very likely to have multicollinearity
+                #actually if the value is greater than 5 is worth noticing.
+#The largest VIF here is total_bedroom and households (around 6)
+
+
+# Add interaction term of longtitude*latitude => similar to pointing the location on the map
+model_lin2 <- lm(median_house_value ~. + longitude*latitude, data = housing_train)
+summary(model_lin2) #R-squared = 0.6293
+
+model_lin2_2 <- lm(median_house_value ~. + housing_median_age*ocean_proximity, data = housing_train)
+summary(model_lin2_2) #R-squared = 0.6273
+
+model_lin2_3 <- lm(median_house_value ~. + housing_median_age*ocean_proximity + longitude*latitude, data = housing_train)
+summary(model_lin2_3) #R-squared = 0.6324
+
+model_lin2_2_2 <- lm(median_house_value ~ longitude + latitude + housing_median_age + total_rooms + total_bedrooms + population + households + median_income + ocean_proximity + housing_median_age*ocean_proximity + latitude*ocean_proximity + total_rooms*ocean_proximity, data = housing_train)
+summary(model_lin2_2_2)
+
+
+# Add functional form
+model_lin3 <- lm(log(median_house_value) ~ longitude + latitude + housing_median_age + I(housing_median_age^2) + total_rooms + total_bedrooms + population + households + log(median_income) + ocean_proximity + housing_median_age*ocean_proximity + longitude*latitude, data = housing_train)
+summary(model_lin3) #R-squared = 0.6556
+
+# Drop some variable with high collinearity
+# Drop total_bedroom
+model_lin4 <- lm(log(median_house_value) ~ longitude + latitude + housing_median_age + I(housing_median_age^2) + total_rooms + population + households + log(median_income) + ocean_proximity + housing_median_age*ocean_proximity + longitude*latitude, data = housing_train)
+summary(model_lin4) #R-squared = 0.6531
+# Drop household
+model_lin5 <- lm(log(median_house_value) ~ longitude + latitude + housing_median_age + I(housing_median_age^2) + total_rooms + total_bedrooms + population + log(median_income) + ocean_proximity + housing_median_age*ocean_proximity + longitude*latitude, data = housing_train)
+summary(model_lin5) #R-squared = 0.6548
+# Drop both
+model_lin6 <- lm(log(median_house_value) ~ longitude + latitude + housing_median_age + I(housing_median_age^2) + total_rooms + population + log(median_income) + ocean_proximity + housing_median_age*ocean_proximity + longitude*latitude, data = housing_train)
+summary(model_lin6) #R-squared = 0.6386
+#For model4 and model5, after dropping one variable made the VIF dropped significantly
+
+
+#Predict
+house_price_prediction <- predict(model_lin2_2_2, newdata = housing_test, type = "response")
+prediction_lin <- as.data.frame(house_price_prediction)
+cor(prediction_lin, housing_test$median_house_value)
 
 ```
 
