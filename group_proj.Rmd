@@ -157,7 +157,7 @@ model_results <- compute(housing_model, housing_norm_test[-10])
 predicted_median_house_value <- model_results$net.result
 # examine the correlation between predicted and actual values
 prediction_h<- as.data.frame(predicted_median_house_value)
-str(prediction_h)
+#str(prediction_h)
 cor(prediction_h$V1, housing_norm_test$median_house_value)
 
 ```
