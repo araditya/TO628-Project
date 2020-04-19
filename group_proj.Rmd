@@ -203,6 +203,46 @@ agrmt_svm2_2 <- prop.table(table(aggreement2_2)); agrmt_svm2_2
 
 
 ```
+
+
+## SVM2
+```{r}
+library(gtools)
+library(kernlab)
+
+#data loading
+housing <- read.csv("california-housing-prices.csv")
+str(housing)
+summary(housing)
+colnames(housing)[colSums(is.na(housing)) > 0] #'total_bedrooms' column has N/A
+
+#data cleansing and modification
+housing$total_bedrooms <- ifelse(is.na(housing$total_bedrooms), mean(housing$total_bedrooms, na.rm = TRUE)/mean(housing$total_rooms, na.rm = TRUE)*housing$total_rooms, housing$total_bedrooms)
+housing$ocean_proximity <- c(housing$ocean_proximity)
+housing$price_level <- as.integer(quantcut(housing$median_house_value, q=5, na.rm = TRUE))
+housing$price_level <- as.factor(housing$price_level)
+
+#rescale the data
+normalize <- function(x){return((x-min(x)) / (max(x) - min(x)))}
+housing_n <- housing
+housing_n[c(3:9)] <- as.data.frame(lapply(housing[c(3:9)], normalize))
+
+#create SVM model 1 (house category)
+in_train <- createDataPartition(housing$median_house_value, p = 0.8, list = FALSE)
+housing_n_train <- housing_n[in_train,]
+housing_n_test <- housing_n[-in_train,]
+svm_model1 <- ksvm(price_level ~ ., data = housing_n_train, kernel = "vanilladot")
+svm_test_pred1 <- predict(svm_model1, housing_n_test) 
+table(svm_test_pred1, housing_n_test$price_level)
+
+#create SVM model 2 (house value)
+housing_n_train <- housing_n[in_train,-11]
+housing_n_test <- housing_n[-in_train,-11]
+svm_model2 <- ksvm(median_house_value ~ ., data = housing_n_train, kernel = "vanilladot")
+svm_test_pred2 <- predict(svm_model2, housing_n_test) 
+cor(svm_test_pred2, housing_n_test$median_house_value)
+```
+
 ## Decision Tree
 ```{r}
 # random suffling
