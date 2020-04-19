@@ -9,23 +9,129 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Introduction
+```{r}
+# import libraries
+library(car)
+library(lmtest)
+#library(sandwich) # for robust test (when heteroskedasticity occurs)
+library(dplyr) # dataframe
+library(ggplot2)
+library(gmodels) # Crosstable
+library(class) # knn
+library(neuralnet) # ANN
+library(kernlab) #SVM
+library(C50) # decision tree
 
-We use the California housing price as out data set.
+# read data file
+housing <- read.csv("california-housing-prices.csv")
+str(housing)
+summary(housing)
 
-
-## Data cleaning
+plot(median_house_value, longitude)
+plot(median_house_value, latitude)
+plot(median_house_value, housing_median_age)
+plot(median_house_value, total_rooms)
+plot(median_house_value, total_bedrooms)
+plot(median_house_value, population)
+plot(median_house_value, households)
+plot(median_house_value, median_income)
+plot(median_house_value, ocean_proximity)
+```
 
 ```{r}
-housingprice <- read.csv("housing.csv")
-summary(housingprice)
-str(housingprice)
+#housing$total_bedrooms <- ifelse(is.na(housing$total_bedrooms), mean(housing$total_bedrooms, na.rm = TRUE), housing$total_bedrooms)
+
+
+#lm with every variables
+model_lin1 <- lm(median_house_value ~., data = housing)
+summary(model_lin1)
+
+#add interaction term of longtitude*latitude -> similar to pointing the location on the map
+model_lin2 <- lm(median_house_value ~. + longitude*latitude, data = housing)
+summary(model_lin2)
+#housing$resi <- model_lin2$residuals
+#varfunc_ols <- lm(log(resi^2) ~ log(longitude) + log(latitude) + log(housing_median_age) + #log(total_rooms) + log(total_bedrooms) + log(population) + log(households) + log(median_income) + #ocean_proximity + log(longitude*latitude), data = housing)
+#housing$varfunc <- exp(varfunc_ols$fitted.values)
+#model_glin2 <- lm(median_house_value ~ . + longitude*latitude, weights = 1/sqrt(varfunc), data = food)
+
+
+#add functional form
+model_lin3 <- lm(log(median_house_value) ~ longitude + latitude + I(housing_median_age^2) + total_rooms + total_bedrooms + population + households + log(median_income) + ocean_proximity, data = housing)
+summary(model_lin3) #R-squared = 0.6725
+
+#drop some variable with high collinearity
+#drop total_bedroom
+model_lin4 <- lm(log(median_house_value) ~ longitude + latitude + I(housing_median_age^2) + total_rooms + population + households + log(median_income) + ocean_proximity, data = housing)
+summary(model_lin4) #R-squared = 0.6705
+#drop household
+model_lin5 <- lm(log(median_house_value) ~ longitude + latitude + I(housing_median_age^2) + total_rooms + total_bedrooms + population + log(median_income) + ocean_proximity, data = housing)
+summary(model_lin5) #R-squared = 0.6713
+#drop both
+model_lin6 <- lm(log(median_house_value) ~ longitude + latitude + I(housing_median_age^2) + total_rooms + population + log(median_income) + ocean_proximity, data = housing)
+summary(model_lin6) #R-squared = 0.6584
+#For model4 and model5, after dropping one variable made the VIF dropped significantly
+
+
+
+#check how the models performed
+#shapiro.test(residuals(model_lin1)) #see if the residuals are normally distributed.
+
+#test homoskedasticity
+bptest(model_lin1) #if p-value is smaller than the significance level we choose, we reject the null
+                   #hypothesis, meaning there exist heteroskedasticity
+#The result is that we reject the null hypothesis, i.e. there exist heteroskedasticity
+
+#test collinearity
+vif(model_lin5) #if the value is greater than 10 then it's very likely to have multicollinearity
+                #actually if the value is greater than 5 is worth noticing.
+#The largest VIF here is total_bedroom and households (around 6), so we can consider dropping them
+
+#test autocorrelation of residual
+dwtest(model_lin1) #if p-value is smaller than the significance level, we reject the null hypoth.,
+                   #meanig there is autocorrelation (or the model is incorrectly specified)
+#We reject the null hypothesis, so there is autocorrelation.
+
+#test if there are outliers
+outlierTest(model_lin1)
+#There are two significant outliers, we can consider dropping them
+
+#plots
+plot(model_lin1, which=1) #residual and fitted value plot
+plot(model_lin1, which=2)
+
+
+
 ```
 
 
-## Model Building
+<<<<<<< HEAD
+=======
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
 ```{r}
-# I'm thinking of adding some interaction variable for regression models
-# maybe we can add longtitude*latitude, 
+# import libraries
+library(car)
+library(lmtest)
+library(dplyr) # dataframe
+library(ggplot2)
+library(gmodels) # Crosstable
+library(class) # knn
+library(neuralnet) # ANN
+library(kernlab) #SVM
+library(C50) # decision tree
+
+# read data file
+housing <- read.csv("california-housing-prices.csv")
+str(housing)
+
 ```
 
+## linear regression
+
+```{r}
+model_lin <- lm(median_house_value ~., data = housing)
+summary(model_lin)
+
+```
+
+>>>>>>> a7aa94061e57198dec18f6430fbc2178085173cb
