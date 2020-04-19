@@ -135,7 +135,6 @@ agrmt_DT <- prop.table(table(aggreement_DT)); agrmt_DT
 ```
 ##ANN
 ```{r}
-
 normalize <- function(x) { 
   return((x - min(x)) / (max(x) - min(x)))
 }
