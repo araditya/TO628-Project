@@ -286,10 +286,10 @@ housing_n[c(1:9)] <- as.data.frame(lapply(housing[c(1:9)], normalize))
 
 # Partioning Data Randomly
 in_train <- createDataPartition(housing$median_house_value, p = 0.8, list = TRUE)
-housing_train <- housing[in_train, ]
-housing_test <- housing[-in_train, ]
-housing_train_labels <- housing[in_train, 1]
-housing_test_labels <- housing[-in_train, 1]
+housing_train <- housing_n[in_train, ]
+housing_test <- housing_n[-in_train, ]
+housing_train_labels <- housing_n[in_train, 1]
+housing_test_labels <- housing_n[-in_train, 1]
 housing_test_pred <- knn(train = housing_train, test = housing_test,
                       cl = housing_train_labels, k=21)
 
