@@ -121,7 +121,7 @@ prediction_lin <- as.data.frame(house_price_prediction)
 cor(prediction_lin, housing_test$median_house_value)
 
 #Predict (for models with functional form)
-house_price_prediction <- predict(model_lin6, newdata = housing_test, type = "response")
+house_price_prediction <- predict(model_lin3, newdata = housing_test, type = "response")
 prediction_lin <- as.data.frame(house_price_prediction)
 cor(prediction_lin, log(housing_test$median_house_value))
 
