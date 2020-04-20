@@ -18,6 +18,11 @@ Note that the `echo = FALSE` parameter was added to the code chunk to prevent pr
 
 =======
 >>>>>>> 205da1173a7f525bfabdccc368fc885fc7759024
+
+
+#=============================================================================
+# Importing libraries
+#=============================================================================
 ```{r}
 # import libraries
 library(car)
@@ -29,41 +34,65 @@ library(class) # knn
 library(neuralnet) # ANN
 library(kernlab) #SVM
 library(C50) # decision tree
+library(caret) #partitioning
+l
+```
 
+
+#=============================================================================
+# Data setup
+#=============================================================================
+```{r}
 # read data file
 housing <- read.csv("california-housing-prices.csv")
-str(housing)
+str(housing) #'ocean_proximity' column is factor
 summary(housing)
+colnames(housing)[colSums(is.na(housing)) > 0] #total bedroom column has n/a
+
+#clean the dataset
+housing$total_bedrooms <- ifelse(is.na(housing$total_bedrooms), mean(housing$total_bedrooms, na.rm = TRUE)/mean(housing$total_rooms, na.rm = TRUE)*housing$total_rooms, housing$total_bedrooms) #fill n/a of 'total_bedrooms' column in a fixed proportion to firgures in 'total_rooms'
+housing <- housing[,c(10,1:9)] #move 'median_house_value' column to first
+housing_ml <- housing #create separte dataset for maching learning algorithm
+housing_ml$ocean_proximity <-c(housing_ml$ocean_proximity) #make 'ocean_proximity'dummy variables for machine learning algorithm
+
+#rescale the dataset
+normalize <- function(x){return((x-min(x)) / (max(x) - min(x)))}
+housing_ml_n <- housing_ml
+housing_ml_n[c(2:10)]<- as.data.frame(lapply(housing_ml[c(2:10)], normalize)) #normalize against abilities only
+
+#separte the dataset
+in_train <- createDataPartition(housing$median_house_value, p = 0.8, list = FALSE)
+housing_train <- housing[in_train,]
+housing_test <- housing[in_train,]
+housing_ml_train <- housing_ml[in_train,]
+housing_ml_test <- housing_ml[in_train,]
+housing_ml_n_train <- housing_ml_n[in_train,]
+housing_ml_n_test <- housing_ml_n[-in_train,]
+housing_ml_n_train_wo_labels <- housing_ml_n[in_train,2:10]
+housing_ml_n_test_wo_labels <- housing_ml_n[-in_train,2:10]
+train_labels <- housing_ml_n[in_train,1]
+test_labels <- housing_ml_n[-in_train,1]
 
 ```
 
-```{r}
-#clean data
-
-housing$total_bedrooms <- ifelse(is.na(housing$total_bedrooms), mean(housing$total_bedrooms, na.rm = TRUE)/mean(housing$total_rooms, na.rm = TRUE)*housing$total_rooms, housing$total_bedrooms)
-
-housing_train <- housing[1:16000,]
-housing_test <- housing[16001:20640,]
-
-```
-
-## linear regression
-
+#=============================================================================
+# Linear regression
+#=============================================================================
 ```{r}
 # Graphs of median_house_value with other explanatory variables
-plot(median_house_value, longitude)
-plot(median_house_value, latitude)
-plot(median_house_value, housing_median_age)
-plot(median_house_value, total_rooms)
-plot(median_house_value, total_bedrooms)
-plot(median_house_value, population)
-plot(median_house_value, households)
-plot(median_house_value, median_income)
-plot(median_house_value, ocean_proximity)
+plot(housing$median_house_value, housing$longitude)
+plot(housing$median_house_value, housing$latitude)
+plot(housing$median_house_value, housing$housing_median_age)
+plot(housing$median_house_value, housing$total_rooms)
+plot(housing$median_house_value, housing$total_bedrooms)
+plot(housing$median_house_value, housing$population)
+plot(housing$median_house_value, housing$households)
+plot(housing$median_house_value, housing$median_income)
+plot(housing$median_house_value, housing$ocean_proximity)
 
 # Linear model with every variable
 model_lin1 <- lm(median_house_value ~., data = housing_train)
-summary(model_lin1) #R-squared = 0.6244
+summary(model_lin1) #R-squared = 0.6244 -> 0.6361
 
 # Test collinearity
 vif(model_lin1) #if the value is greater than 10 then it's very likely to have multicollinearity
