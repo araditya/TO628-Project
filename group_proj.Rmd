@@ -1,6 +1,7 @@
 ---
 title: "group_proj"
 author: "kaike"
+Group members: "Kai-yuan Ke, Jimmy Sangil Park, Sunhwi Kim, Kishore Premkumar, Aditya R Auradker"
 date: "April 18, 2020"
 output: html_document
 ---
@@ -52,8 +53,11 @@ colnames(housing)[colSums(is.na(housing)) > 0] #total bedroom column has n/a
 #clean the dataset
 housing$total_bedrooms <- ifelse(is.na(housing$total_bedrooms), mean(housing$total_bedrooms, na.rm = TRUE)/mean(housing$total_rooms, na.rm = TRUE)*housing$total_rooms, housing$total_bedrooms) #fill n/a of 'total_bedrooms' column in a fixed proportion to firgures in 'total_rooms'
 housing <- housing[,c(9,1:8,10)] #move 'median_house_value' column to first
+#==========================================================================================================
+#Data Exploraion - Box plot depicting the median house prices according to the proximity from the ocean
+#===========================================================================================================
+housing_value <-plot(x=housing$ocean_proximity, y=housing$median_house_value, main="Housing Value according to its proximity from the ocean", xlab="Ocean Proximity",  ylab="Median House Value")
 
-```
 
 #=============================================================================
 # Linear regression
