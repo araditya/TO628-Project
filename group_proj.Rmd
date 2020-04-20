@@ -236,10 +236,9 @@ agrmt_rf <- prop.table(table(aggreement_rf)); agrmt_rf
 ```{r}
 #normalize
 housing_ann <- housing
-housing_ann$ocean_proximity <-c(housing_ann$ocean_proximity) #make 'ocean_proximity'dummy variables for machine learning algorithm
+housing$ocean_proximity <- as.numeric(housing$ocean_proximity)
 normalize <- function(x){return((x-min(x)) / (max(x) - min(x)))}
-housing_ann_n <- housing_ann
-housing_ann_n[c(2:10)]<- as.data.frame(lapply(housing_ann[c(2:10)], normalize)) #normalize except for 'median_house_value'
+housing_ann_n <- as.data.frame(lapply(housing_ann, normalize))
 
 #separate data
 in_train <- createDataPartition(housing_ann_n$median_house_value, p = 0.8, list = FALSE)
@@ -248,7 +247,7 @@ housing_ann_n_test <- housing_ann_n[-in_train,]
 
 model_ann <- neuralnet(formula = median_house_value ~., data = housing_ann_n_train,hidden = c(4,3,2),threshold = 0.08,stepmax = 8e+04,lifesign =  "full",lifesign.step= 1000,act.fct = "logistic")
 
-ann_result <- compute(model_ann, housing_ann_n_test)
+ann_result <- compute(model_ann, housing_ann_n_test[-1])
 ann_pred <- ann_result$net.result
 prediction_h<- as.data.frame(ann_pred)
 cor(prediction_h$V1, housing_ann_n_test$median_house_value)
@@ -258,7 +257,6 @@ cor(prediction_h$V1, housing_ann_n_test$median_house_value)
 #=============================================================================
 # KNN
 #=============================================================================
-
 ```{r}
 
 #normalize
@@ -329,9 +327,12 @@ normalize <- function(x) {
   return((x - min(x)) / (max(x) - min(x)))
 }
 #str(hou)
-hou <- housing[-10]
+hou <- housing
+hou$ocean_proximity <- c(hou$ocean_proximity)
 hou$ocean_proximity <- as.numeric(housing$ocean_proximity)
 housing_norm <- as.data.frame(lapply(hou, normalize))
+summary(housing_norm)
+
 #housing_norm$median_house_value <- housing$median_house_value
 str(housing_norm)
 housing_norm_train <- housing_norm[1:16000,]
