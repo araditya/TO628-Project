@@ -82,7 +82,7 @@ summary(model_lin1) #R-squared = 0.6479, corr. w/ test data is 0.8050
 # Test collinearity
 vif(model_lin1) #if the value is greater than 10 then it's very likely to have multicollinearity
                 #actually if the value is greater than 5 is worth noticing.
-#The largest VIF here is total_bedroom and households (around 6)
+#The largest VIFs here are total_bedroom and households (around 6)
 
 
 # Add interaction terms
