@@ -35,12 +35,12 @@ library(neuralnet) # ANN
 library(kernlab) #SVM
 library(C50) # decision tree
 library(caret) #partitioning
-l
+library(randomForest) #randomforest
 ```
 
 
 #=============================================================================
-# Data setup
+# Initial data setup
 #=============================================================================
 ```{r}
 # read data file
@@ -51,27 +51,7 @@ colnames(housing)[colSums(is.na(housing)) > 0] #total bedroom column has n/a
 
 #clean the dataset
 housing$total_bedrooms <- ifelse(is.na(housing$total_bedrooms), mean(housing$total_bedrooms, na.rm = TRUE)/mean(housing$total_rooms, na.rm = TRUE)*housing$total_rooms, housing$total_bedrooms) #fill n/a of 'total_bedrooms' column in a fixed proportion to firgures in 'total_rooms'
-housing <- housing[,c(10,1:9)] #move 'median_house_value' column to first
-housing_ml <- housing #create separte dataset for maching learning algorithm
-housing_ml$ocean_proximity <-c(housing_ml$ocean_proximity) #make 'ocean_proximity'dummy variables for machine learning algorithm
-
-#rescale the dataset
-normalize <- function(x){return((x-min(x)) / (max(x) - min(x)))}
-housing_ml_n <- housing_ml
-housing_ml_n[c(2:10)]<- as.data.frame(lapply(housing_ml[c(2:10)], normalize)) #normalize against abilities only
-
-#separte the dataset
-in_train <- createDataPartition(housing$median_house_value, p = 0.8, list = FALSE)
-housing_train <- housing[in_train,]
-housing_test <- housing[in_train,]
-housing_ml_train <- housing_ml[in_train,]
-housing_ml_test <- housing_ml[in_train,]
-housing_ml_n_train <- housing_ml_n[in_train,]
-housing_ml_n_test <- housing_ml_n[-in_train,]
-housing_ml_n_train_wo_labels <- housing_ml_n[in_train,2:10]
-housing_ml_n_test_wo_labels <- housing_ml_n[-in_train,2:10]
-train_labels <- housing_ml_n[in_train,1]
-test_labels <- housing_ml_n[-in_train,1]
+housing <- housing[,c(9,1:8,10)] #move 'median_house_value' column to first
 
 ```
 
@@ -90,9 +70,14 @@ plot(housing$median_house_value, housing$households)
 plot(housing$median_house_value, housing$median_income)
 plot(housing$median_house_value, housing$ocean_proximity)
 
+#separate the dataset
+in_train <- createDataPartition(housing$median_house_value, p = 0.8, list = FALSE)
+housing_train <- housing[in_train,]
+housing_test <- housing[in_train,]
+
 # Linear model with every variable
 model_lin1 <- lm(median_house_value ~., data = housing_train)
-summary(model_lin1) #R-squared = 0.6244 -> 0.6361
+summary(model_lin1) #R-squared = 0.6244
 
 # Test collinearity
 vif(model_lin1) #if the value is greater than 10 then it's very likely to have multicollinearity
@@ -130,7 +115,6 @@ model_lin6 <- lm(log(median_house_value) ~ longitude + latitude + housing_median
 summary(model_lin6) #R-squared = 0.6386
 #For model4 and model5, after dropping one variable made the VIF dropped significantly
 
-
 #Predict
 house_price_prediction <- predict(model_lin2_2_2, newdata = housing_test, type = "response")
 prediction_lin <- as.data.frame(house_price_prediction)
@@ -141,8 +125,10 @@ cor(prediction_lin, housing_test$median_house_value)
 <<<<<<< HEAD
 >>>>>>> a7aa94061e57198dec18f6430fbc2178085173cb
 =======
-## SVM
 
+#=============================================================================
+# SVM
+#=============================================================================
 ```{r}
 # Data categorization
 hist(housing$median_house_value)
@@ -167,55 +153,137 @@ Pricecut <- function(x) {
 housingcat <- housing
 housingcat$pricecat <- sapply(housingcat$median_house_value, FUN = Pricecut)
 housingcat$pricecat <- as.factor(housingcat$pricecat)
+housingcat= subset(housingcat, select = -c(median_house_value)) #drop 'median_house_value' from new 'housingcat' data frame
 str(housingcat)
 
-# train & test data for "housing cat"
-housingcat_train <- housingcat[1:16000,]
-housingcat_test <- housingcat[16001:20640,]
+# train & test data
+in_train <- createDataPartition(housing$median_house_value, p = 0.8, list = FALSE)
+housing_train <- housing[in_train,]
+housing_test <- housing[-in_train,]
 
-# SVM1 - vanilladot - housevalue
-model_svm1 <- ksvm(median_house_value ~., data = housingcat_train,
-             kernel = "vanilladot")
+in_train <- createDataPartition(housingcat$pricecat, p = 0.8, list = FALSE)
+housingcat_train <- housingcat[in_train,]
+housingcat_test <- housingcat[-in_train,]
 
-svm1_result <- predict(model_svm1, housingcat_test)
+# SVM1_1: housevalue_vanilladot 
+model_svm1_1 <- ksvm(median_house_value ~., data = housing_train, kernel = "vanilladot")
+svm1_1_result <- predict(model_svm1_1, housing_test)
+plot(svm1_1_result, housing_test$median_house_value)
+cor_svm1_1 <- cor(svm1_1_result, housing_test$median_house_value); cor_svm1_1
+# Correlation: 0.803
 
-plot(svm1_result, housingcat_test$median_house_value)
-cor_svm1 <- cor(svm1_result, housingcat_test$median_house_value); cor_svm1
+# SVM1_2: housevalue_rbfdot
+model_svm1_2 <- ksvm(median_house_value ~., data = housing_train, kernel = "rbfdot")
+svm1_2_result <- predict(model_svm1_2, housing_test)
+plot(svm1_2_result, housingcat_test$median_house_value)
+cor_svm1_2 <- cor(svm1_2_result, housing_test$median_house_value); cor_svm1_2
+# Correlation: 0.884
 
-# SVM1_2 - vanilladot - Pricecat
-model_svm1_2 <- ksvm(pricecat ~., data = housingcat_train,
-             kernel = "vanilladot")
+# SVM2_1: Pricecat_vanilladot 
+model_svm2_1 <- ksvm(pricecat ~., data = housingcat_train,kernel = "vanilladot")
+svm2_1_result <- predict(model_svm2_1, housingcat_test)
+aggreement2_1 <- svm2_1_result == housingcat_test$pricecat
+table(svm2_1_result,housingcat_test$pricecat)
+agrmt_svm2_1 <- prop.table(table(aggreement2_1)); agrmt_svm2_1
+# Agreement: 0.624
 
-svm1_2_result <- predict(model_svm1_2, housingcat_test)
-
-aggreement1_2 <- svm1_2_result == housingcat_test$pricecat
-
-table(svm1_2_result,housingcat_test$pricecat)
-agrmt_svm1_2 <- prop.table(table(aggreement1_2)); agrmt_svm1_2
-
-# SVM2 - rbfdot - housevalue
-model_svm2 <- ksvm(median_house_value ~., data = housingcat_train,
-             kernel = "rbfdot")
-
-svm2_result <- predict(model_svm2, housingcat_test)
-
-plot(svm2_result, housingcat_test$median_house_value)
-cor_svm2 <- cor(svm2_result, housingcat_test$median_house_value); cor_svm2
-
-# SVM2_2 - rbfdot - Pricecat
-model_svm2_2 <- ksvm(pricecat ~., data = housingcat_train,
-             kernel = "rbfdot")
-
+# SVM2_2: Pricecat_rbfdot
+model_svm2_2 <- ksvm(pricecat ~., data = housingcat_train, kernel = "rbfdot")
 svm2_2_result <- predict(model_svm2_2, housingcat_test)
-
 aggreement2_2 <- svm2_2_result == housingcat_test$pricecat
-
 table(svm2_2_result,housingcat_test$pricecat)
 agrmt_svm2_2 <- prop.table(table(aggreement2_2)); agrmt_svm2_2
-
+# Agreement: 0.662
 
 ```
 
+#=============================================================================
+# Decision tree & Random forest
+#=============================================================================
+```{r}
+# random suffling
+set.seed(33)
+housingcat_train_rand <- housingcat_train[order(runif(16513)), ]
+
+# Decision Tree model
+model_DT <- C5.0(pricecat ~., data = housingcat_train_rand)
+DT_pred <- predict(model_DT, housingcat_test)
+
+aggreement_DT <- DT_pred == housingcat_test$pricecat
+
+table(DT_pred,housingcat_test$pricecat)
+agrmt_DT <- prop.table(table(aggreement_DT)); agrmt_DT
+# Agreement: 0.662
+
+library(randomForest)
+set.seed(300)
+model_rf <- randomForest(pricecat ~., data = housingcat_train_rand)
+model_rf
+
+rf_pred <- predict(model_rf, housingcat_test)
+
+aggreement_rf <- rf_pred == housingcat_test$pricecat
+
+table(rf_pred, housingcat_test$pricecat)
+agrmt_rf <- prop.table(table(aggreement_rf)); agrmt_rf
+# Agreement: 0.713
+
+```
+
+#=============================================================================
+# ANN
+#=============================================================================
+```{r}
+#normalize
+housing_ann <- housing
+housing_ann$ocean_proximity <-c(housing_ann$ocean_proximity) #make 'ocean_proximity'dummy variables for machine learning algorithm
+normalize <- function(x){return((x-min(x)) / (max(x) - min(x)))}
+housing_ann_n <- housing_ann
+housing_ann_n[c(2:10)]<- as.data.frame(lapply(housing_ann[c(2:10)], normalize)) #normalize except for 'median_house_value'
+
+#separate data
+in_train <- createDataPartition(housing_ann_n$median_house_value, p = 0.8, list = FALSE)
+housing_ann_n_train <- housing_ann_n[in_train,]
+housing_ann_n_test <- housing_ann_n[-in_train,]
+
+model_ann <- neuralnet(formula = median_house_value ~., data = housing_ann_n_train,hidden = c(4,3,2),threshold = 0.08,stepmax = 8e+04,lifesign =  "full",lifesign.step= 1000,act.fct = "logistic")
+
+ann_result <- compute(model_ann, housing_ann_n_test)
+ann_pred <- ann_result$net.result
+prediction_h<- as.data.frame(ann_pred)
+cor(prediction_h$V1, housing_ann_n_test$median_house_value)
+
+```
+
+#=============================================================================
+# KNN
+#=============================================================================
+
+```{r}
+
+#normalize
+normalize <- function(x){return((x-min(x)) / (max(x) - min(x)))}
+housingcat_n <- housingcat
+housingcat_n$ocean_proximity <- c(housingcat_n$ocean_proximity) #make 'ocean_proximity'dummy variables
+housingcat_n[c(1:9)]<- as.data.frame(lapply(housingcat_n[c(1:9)], normalize))
+
+#separate data
+in_train <- createDataPartition(housingcat_n$pricecat, p = 0.8, list = FALSE)
+housingcat_n_train <- housingcat_n[in_train,1:9]
+housingcat_n_test <- housingcat_n[-in_train,1:9]
+housingcat_n_train_labels <- housingcat_n[in_train,10]
+housingcat_n_test_labels <- housingcat_n[-in_train,10]
+
+knn_pred <- knn(train = housingcat_n_train, test = housingcat_n_test, cl = housingcat_n_train_labels, k=21)
+aggreement_knn <- knn_pred == housingcat_n_test$pricecat
+agrmt_knn <- prop.table(table(aggreement_knn)); agrmt_rf
+# Agreement: 0.713
+
+```
+
+
+
+## Archive
 
 ## SVM2
 ```{r}
@@ -255,24 +323,7 @@ svm_test_pred2 <- predict(svm_model2, housing_n_test)
 cor(svm_test_pred2, housing_n_test$median_house_value)
 ```
 
-## Decision Tree
-```{r}
-# random suffling
-set.seed(33)
-housingcat_train_rand <- housingcat_train[order(runif(16000)), ]
-
-# Decision Tree model
-model_DT <- C5.0(pricecat ~., data = housingcat_train_rand)
-DT_pred <- predict(model_DT, housingcat_test)
-
-aggreement_DT <- DT_pred == housingcat_test$pricecat
-
-table(DT_pred,housingcat_test$pricecat)
-agrmt_DT <- prop.table(table(aggreement_DT)); agrmt_DT
-
-
-```
-##ANN
+# ANN
 ```{r}
 normalize <- function(x) { 
   return((x - min(x)) / (max(x) - min(x)))
@@ -300,8 +351,9 @@ prediction_h<- as.data.frame(predicted_median_house_value)
 cor(prediction_h$V1, housing_norm_test$median_house_value)
 
 ```
-#KNN
 
+# KNN
+```{r}
 library(class)
 
 normalize <- function(x){return((x-min(x)) / (max(x) - min(x)))}
@@ -322,7 +374,23 @@ housing_train_labels <- housing_n[in_train, 1]
 housing_test_labels <- housing_n[-in_train, 1]
 housing_test_pred <- knn(train = housing_train, test = housing_test,
                       cl = housing_train_labels, k=21)
+```
 
+#rescale the dataset
+normalize <- function(x){return((x-min(x)) / (max(x) - min(x)))}
+housing_ml_n <- housing_ml
+housing_ml_n[c(2:10)]<- as.data.frame(lapply(housing_ml[c(2:10)], normalize)) #normalize against abilities only
+
+
+
+housing_ml_train <- housing_ml[in_train,]
+housing_ml_test <- housing_ml[in_train,]
+housing_ml_n_train <- housing_ml_n[in_train,]
+housing_ml_n_test <- housing_ml_n[-in_train,]
+housing_ml_n_train_wo_labels <- housing_ml_n[in_train,2:10]
+housing_ml_n_test_wo_labels <- housing_ml_n[-in_train,2:10]
+train_labels <- housing_ml_n[in_train,1]
+test_labels <- housing_ml_n[-in_train,1]
 
 
 >>>>>>> 205da1173a7f525bfabdccc368fc885fc7759024
