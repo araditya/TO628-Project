@@ -1,6 +1,7 @@
 ---
 title: "group_proj"
 author: "kaike"
+Group members: "Kai-yuan Ke, Jimmy Sangil Park, Sunhwi Kim, Kishore Premkumar, Aditya R Auradker"
 date: "April 18, 2020"
 output: html_document
 ---
