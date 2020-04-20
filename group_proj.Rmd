@@ -39,7 +39,6 @@ library(caret) #partitioning
 library(randomForest) #randomforest
 ```
 
-
 #=============================================================================
 # Initial data setup
 #=============================================================================
@@ -53,11 +52,16 @@ colnames(housing)[colSums(is.na(housing)) > 0] #total bedroom column has n/a
 #clean the dataset
 housing$total_bedrooms <- ifelse(is.na(housing$total_bedrooms), mean(housing$total_bedrooms, na.rm = TRUE)/mean(housing$total_rooms, na.rm = TRUE)*housing$total_rooms, housing$total_bedrooms) #fill n/a of 'total_bedrooms' column in a fixed proportion to firgures in 'total_rooms'
 housing <- housing[,c(9,1:8,10)] #move 'median_house_value' column to first
+
+```
+
+```{r}
 #==========================================================================================================
 #Data Exploraion - Box plot depicting the median house prices according to the proximity from the ocean
 #===========================================================================================================
 housing_value <-plot(x=housing$ocean_proximity, y=housing$median_house_value, main="Housing Value according to its proximity from the ocean", xlab="Ocean Proximity",  ylab="Median House Value")
 
+```
 
 #=============================================================================
 # Linear regression
@@ -116,7 +120,7 @@ prediction_lin <- as.data.frame(house_price_prediction)
 cor(prediction_lin, housing_test$median_house_value)
 
 #Predict (for models with functional form)
-house_price_prediction <- predict(model_lin6, newdata = housing_test, type = "response")
+house_price_prediction <- predict(model_lin3, newdata = housing_test, type = "response")
 prediction_lin <- as.data.frame(house_price_prediction)
 cor(prediction_lin, log(housing_test$median_house_value))
 
@@ -245,6 +249,7 @@ in_train <- createDataPartition(housing_ann_n$median_house_value, p = 0.8, list 
 housing_ann_n_train <- housing_ann_n[in_train,]
 housing_ann_n_test <- housing_ann_n[-in_train,]
 
+#run ANN
 model_ann <- neuralnet(formula = median_house_value ~., data = housing_ann_n_train,hidden = c(4,3,2),threshold = 0.08,stepmax = 8e+04,lifesign =  "full",lifesign.step= 1000,act.fct = "logistic")
 
 ann_result <- compute(model_ann, housing_ann_n_test[-1])
@@ -272,126 +277,14 @@ housingcat_n_test <- housingcat_n[-in_train,1:9]
 housingcat_n_train_labels <- housingcat_n[in_train,10]
 housingcat_n_test_labels <- housingcat_n[-in_train,10]
 
+#run knn
 knn_pred <- knn(train = housingcat_n_train, test = housingcat_n_test, cl = housingcat_n_train_labels, k=21)
-aggreement_knn <- knn_pred == housingcat_n_test$pricecat
-agrmt_knn <- prop.table(table(aggreement_knn)); agrmt_rf
-# Agreement: 0.713
+
+aggreement_knn <- knn_pred == housingcat_n_test_labels
+table(knn_pred, housingcat_n_test_labels)
+agrmt_knn <- prop.table(table(aggreement_knn)); agrmt_knn
+# Agreement: 0.626
 
 ```
-
-
-
-## Archive
-
-## SVM2
-```{r}
-library(gtools)
-library(kernlab)
-
-#data loading
-housing <- read.csv("california-housing-prices.csv")
-str(housing)
-summary(housing)
-colnames(housing)[colSums(is.na(housing)) > 0] #'total_bedrooms' column has N/A
-
-#data cleansing and modification
-housing$total_bedrooms <- ifelse(is.na(housing$total_bedrooms), mean(housing$total_bedrooms, na.rm = TRUE)/mean(housing$total_rooms, na.rm = TRUE)*housing$total_rooms, housing$total_bedrooms)
-housing$ocean_proximity <- c(housing$ocean_proximity)
-housing$price_level <- as.integer(quantcut(housing$median_house_value, q=5, na.rm = TRUE))
-housing$price_level <- as.factor(housing$price_level)
-
-#rescale the data
-normalize <- function(x){return((x-min(x)) / (max(x) - min(x)))}
-housing_n <- housing
-housing_n[c(3:9)] <- as.data.frame(lapply(housing[c(3:9)], normalize))
-
-#create SVM model 1 (house category)
-in_train <- createDataPartition(housing$median_house_value, p = 0.8, list = FALSE)
-housing_n_train <- housing_n[in_train,]
-housing_n_test <- housing_n[-in_train,]
-svm_model1 <- ksvm(price_level ~ ., data = housing_n_train, kernel = "vanilladot")
-svm_test_pred1 <- predict(svm_model1, housing_n_test) 
-table(svm_test_pred1, housing_n_test$price_level)
-
-#create SVM model 2 (house value)
-housing_n_train <- housing_n[in_train,-11]
-housing_n_test <- housing_n[-in_train,-11]
-svm_model2 <- ksvm(median_house_value ~ ., data = housing_n_train, kernel = "vanilladot")
-svm_test_pred2 <- predict(svm_model2, housing_n_test) 
-cor(svm_test_pred2, housing_n_test$median_house_value)
-```
-
-# ANN
-```{r}
-normalize <- function(x) { 
-  return((x - min(x)) / (max(x) - min(x)))
-}
-#str(hou)
-hou <- housing
-hou$ocean_proximity <- c(hou$ocean_proximity)
-hou$ocean_proximity <- as.numeric(housing$ocean_proximity)
-housing_norm <- as.data.frame(lapply(hou, normalize))
-summary(housing_norm)
-
-#housing_norm$median_house_value <- housing$median_house_value
-str(housing_norm)
-housing_norm_train <- housing_norm[1:16000,]
-housing_norm_test <- housing_norm[16001:20640,]
-
-housing_model <- neuralnet(formula = median_house_value ~.,
-                              data = housing_norm_train,hidden = c(4,3),threshold = 0.08,stepmax = 8e+04,lifesign =  "full",lifesign.step= 1000,act.fct = "logistic")
-#plot(housing_model)
-
-# obtain model results
-model_results <- compute(housing_model, housing_norm_test[-9])
-# obtain predicted strength values
-predicted_median_house_value <- model_results$net.result
-# examine the correlation between predicted and actual values
-prediction_h<- as.data.frame(predicted_median_house_value)
-#str(prediction_h)
-cor(prediction_h$V1, housing_norm_test$median_house_value)
-
-```
-
-# KNN
-```{r}
-library(class)
-
-normalize <- function(x){return((x-min(x)) / (max(x) - min(x)))}
-housing_n <- housing
-housing_n[c(1:9)] <- as.data.frame(lapply(housing[c(1:9)], normalize))
-housing_train <- housing_n[4001:20640, ]
-housing_test <- housing_n[1:4000, ]
-housing_train_labels <- housing_n[4001:20640, 1]
-housing_test_labels <- housing_n[1:4001, 1]
-
-housing_test_pred <- knn(train = housing_train, test = housing_test,
-                      cl = housing_train_labels, k=21)
-# Partioning Data Randomly
-in_train <- createDataPartition(housing$median_house_value, p = 0.8, list = TRUE)
-housing_train <- housing_n[in_train, ]
-housing_test <- housing_n[-in_train, ]
-housing_train_labels <- housing_n[in_train, 1]
-housing_test_labels <- housing_n[-in_train, 1]
-housing_test_pred <- knn(train = housing_train, test = housing_test,
-                      cl = housing_train_labels, k=21)
-```
-
-#rescale the dataset
-normalize <- function(x){return((x-min(x)) / (max(x) - min(x)))}
-housing_ml_n <- housing_ml
-housing_ml_n[c(2:10)]<- as.data.frame(lapply(housing_ml[c(2:10)], normalize)) #normalize against abilities only
-
-
-
-housing_ml_train <- housing_ml[in_train,]
-housing_ml_test <- housing_ml[in_train,]
-housing_ml_n_train <- housing_ml_n[in_train,]
-housing_ml_n_test <- housing_ml_n[-in_train,]
-housing_ml_n_train_wo_labels <- housing_ml_n[in_train,2:10]
-housing_ml_n_test_wo_labels <- housing_ml_n[-in_train,2:10]
-train_labels <- housing_ml_n[in_train,1]
-test_labels <- housing_ml_n[-in_train,1]
-
 
 >>>>>>> 205da1173a7f525bfabdccc368fc885fc7759024
