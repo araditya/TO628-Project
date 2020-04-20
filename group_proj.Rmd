@@ -85,43 +85,34 @@ vif(model_lin1) #if the value is greater than 10 then it's very likely to have m
 #The largest VIF here is total_bedroom and households (around 6)
 
 
-# Add interaction term of longtitude*latitude => similar to pointing the location on the map
-model_lin2_1 <- lm(median_house_value ~. + longitude*latitude, data = housing_train)
-summary(model_lin2_1) #R-squared = 0.6511, corr. w/ test data is 0.8071
-
-model_lin2_2 <- lm(median_house_value ~. + housing_median_age*ocean_proximity, data = housing_train)
-summary(model_lin2_2) #R-squared = 0.6512, corr. w/ test data is 0.8072
-
-model_lin2_3 <- lm(median_house_value ~. + housing_median_age*ocean_proximity + longitude*latitude, data = housing_train)
-summary(model_lin2_3) #R-squared = 0.6546, corr. w/ test data is 0.8093
-
-model_lin2_4 <- lm(median_house_value ~ longitude + latitude + housing_median_age + total_rooms + total_bedrooms + population + households + median_income + ocean_proximity + housing_median_age*ocean_proximity + latitude*ocean_proximity + total_rooms*ocean_proximity, data = housing_train)
-summary(model_lin2_4) #R-squared = 0.6562, corr. w/ test data is 0.8104
+# Add interaction terms
+model_lin2 <- lm(median_house_value ~ longitude + latitude + housing_median_age + total_rooms + total_bedrooms + population + households + median_income + ocean_proximity + housing_median_age*ocean_proximity + latitude*ocean_proximity + total_rooms*ocean_proximity, data = housing_train)
+summary(model_lin2) #R-squared = 0.6562, corr. w/ test data is 0.8104
 
 
-# Add functional form
-model_lin3 <- lm(log(median_house_value) ~ longitude + latitude + housing_median_age + I(housing_median_age^2) + total_rooms + total_bedrooms + population + households + log(median_income) + ocean_proximity + housing_median_age*ocean_proximity + latitude*ocean_proximity + total_rooms*ocean_proximity + longitude*latitude, data = housing_train)
-summary(model_lin3) #R-squared = 0.6838, corr. w/ test data is 0.8269
+# Add functional forms
+model_lin3 <- lm(log(median_house_value) ~ longitude + latitude + housing_median_age + I(housing_median_age^2) + total_rooms + total_bedrooms + population + households + log(median_income) + ocean_proximity + housing_median_age*ocean_proximity + latitude*ocean_proximity + total_rooms*ocean_proximity, data = housing_train)
+summary(model_lin3) #R-squared = 0.6815, corr. w/ test data is 0.8258
 
 # Drop some variable with high collinearity
 # Drop total_bedroom
-model_lin4 <- lm(log(median_house_value) ~ longitude + latitude + housing_median_age + I(housing_median_age^2) + total_rooms + population + households + log(median_income) + ocean_proximity + housing_median_age*ocean_proximity + latitude*ocean_proximity + total_rooms*ocean_proximity + longitude*latitude, data = housing_train)
-summary(model_lin4) #R-squared = 0.6813, corr. w/ test data is 0.8254
+model_lin4 <- lm(log(median_house_value) ~ longitude + latitude + housing_median_age + I(housing_median_age^2) + total_rooms + population + households + log(median_income) + ocean_proximity + housing_median_age*ocean_proximity + latitude*ocean_proximity + total_rooms*ocean_proximity, data = housing_train)
+summary(model_lin4) #R-squared = 0.6786, corr. w/ test data is 0.8240
 # Drop household
-model_lin5 <- lm(log(median_house_value) ~ longitude + latitude + housing_median_age + I(housing_median_age^2) + total_rooms + total_bedrooms + population + log(median_income) + ocean_proximity + housing_median_age*ocean_proximity + latitude*ocean_proximity + total_rooms*ocean_proximity + longitude*latitude, data = housing_train)
-summary(model_lin5) #R-squared = 0.6834, corr. w/ test data is 0.8267
+model_lin5 <- lm(log(median_house_value) ~ longitude + latitude + housing_median_age + I(housing_median_age^2) + total_rooms + total_bedrooms + population + log(median_income) + ocean_proximity + housing_median_age*ocean_proximity + latitude*ocean_proximity + total_rooms*ocean_proximity, data = housing_train)
+summary(model_lin5) #R-squared = 0.6813, corr. w/ test data is 0.8256
 # Drop both
-model_lin6 <- lm(log(median_house_value) ~ longitude + latitude + housing_median_age + I(housing_median_age^2) + total_rooms + population + log(median_income) + ocean_proximity + housing_median_age*ocean_proximity + latitude*ocean_proximity + total_rooms*ocean_proximity + longitude*latitude, data = housing_train)
-summary(model_lin6) #R-squared = 0.6702, corr. w/ test data is 0.8187
+model_lin6 <- lm(log(median_house_value) ~ longitude + latitude + housing_median_age + I(housing_median_age^2) + total_rooms + population + log(median_income) + ocean_proximity + housing_median_age*ocean_proximity + latitude*ocean_proximity + total_rooms*ocean_proximity, data = housing_train)
+summary(model_lin6) #R-squared = 0.6674, corr. w/ test data is 0.8172
 #For model4 and model5, after dropping one variable made the VIF dropped significantly
 
 #Predict (for models without functional form)
-house_price_prediction <- predict(model_lin2_4, newdata = housing_test, type = "response")
+house_price_prediction <- predict(model_lin2, newdata = housing_test, type = "response")
 prediction_lin <- as.data.frame(house_price_prediction)
 cor(prediction_lin, housing_test$median_house_value)
 
 #Predict (for models with functional form)
-house_price_prediction <- predict(model_lin3, newdata = housing_test, type = "response")
+house_price_prediction <- predict(model_lin6, newdata = housing_test, type = "response")
 prediction_lin <- as.data.frame(house_price_prediction)
 cor(prediction_lin, log(housing_test$median_house_value))
 
