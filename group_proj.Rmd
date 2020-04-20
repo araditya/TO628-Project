@@ -338,11 +338,11 @@ housing_norm_train <- housing_norm[1:16000,]
 housing_norm_test <- housing_norm[16001:20640,]
 
 housing_model <- neuralnet(formula = median_house_value ~.,
-                              data = housing_norm_train,hidden = c(4,3,2),threshold = 0.08,stepmax = 8e+04,lifesign =  "full",lifesign.step= 1000,act.fct = "logistic")
+                              data = housing_norm_train,hidden = c(4,3),threshold = 0.08,stepmax = 8e+04,lifesign =  "full",lifesign.step= 1000,act.fct = "logistic")
 #plot(housing_model)
 
 # obtain model results
-model_results <- compute(housing_model, housing_norm_test[-10])
+model_results <- compute(housing_model, housing_norm_test[-9])
 # obtain predicted strength values
 predicted_median_house_value <- model_results$net.result
 # examine the correlation between predicted and actual values
